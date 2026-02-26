@@ -1,6 +1,7 @@
 import org.jetbrains.changelog.Changelog
 import org.jetbrains.changelog.markdownToHTML
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import java.util.Properties
 
 plugins {
     id("java") // Java support
@@ -137,6 +138,16 @@ tasks {
     }
 }
 
+val localProps = Properties().also { props ->
+    val file = rootProject.file("local.properties")
+    if (file.exists()) props.load(file.inputStream())
+}
+
+val targetProjectPath: String =
+    localProps.getProperty("targetProjectPath")
+        ?: providers.gradleProperty("targetProjectPath").orNull
+        ?: ""
+
 intellijPlatformTesting {
     runIde {
         register("runIdeForUiTests") {
@@ -148,6 +159,9 @@ intellijPlatformTesting {
                         "-Djb.privacy.policy.text=<!--999.999-->",
                         "-Djb.consents.confirmation.enabled=false",
                     )
+                }
+                if (targetProjectPath.isNotBlank()) {
+                    args(targetProjectPath)
                 }
             }
 
