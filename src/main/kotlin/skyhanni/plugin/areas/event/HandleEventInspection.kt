@@ -14,7 +14,9 @@ import org.jetbrains.kotlin.idea.util.AnnotationModificationHelper
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtVisitorVoid
+import org.jetbrains.kotlin.psi.psiUtil.containingClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.isPublic
 
 private const val EVENT_TYPE_PARAM = "eventType"
@@ -31,9 +33,10 @@ class HandleEventInspection : AbstractKotlinInspection() {
 
     override fun buildVisitor(
         holder: ProblemsHolder,
-        isOnTheFly: Boolean
+        isOnTheFly: Boolean,
     ): PsiElementVisitor = object : KtVisitorVoid() {
         override fun visitNamedFunction(function: KtNamedFunction) {
+            if (function.containingClassOrObject !is KtObjectDeclaration) return
             val functionName = function.name ?: return
             val primaryNameMap = buildPrimaryNameMap(function.project)
 
@@ -105,9 +108,8 @@ private class AddHandleEventAnnotationFix : LocalQuickFix {
     override fun getFamilyName() = name
 
     override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
-        val function = descriptor.psiElement as KtNamedFunction
         AnnotationModificationHelper.addAnnotation(
-            function,
+            descriptor.psiElement as KtNamedFunction,
             FqName(HANDLE_EVENT_FQN),
             null,
             null,
