@@ -11,11 +11,8 @@ import com.intellij.psi.PsiReferenceProvider
 import com.intellij.psi.PsiReferenceRegistrar
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.search.PsiShortNamesCache
-import com.intellij.psi.util.PsiTreeUtil
 import com.intellij.util.ProcessingContext
-import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 
 class ConfigPathReferenceContributor : PsiReferenceContributor() {
@@ -30,23 +27,11 @@ class ConfigPathReferenceContributor : PsiReferenceContributor() {
 
 private class ConfigPathReferenceProvider : PsiReferenceProvider() {
 
-    override fun getReferencesByElement(
-        element: PsiElement,
-        context: ProcessingContext
-    ): Array<PsiReference> {
+    override fun getReferencesByElement(element: PsiElement, context: ProcessingContext): Array<PsiReference> {
         val str = element as? KtStringTemplateExpression ?: return PsiReference.EMPTY_ARRAY
         val literal = evaluateStringTemplate(str) ?: return PsiReference.EMPTY_ARRAY
         if (!literal.contains('.')) return PsiReference.EMPTY_ARRAY
-
-        // Todo make it work with transform, etc.
-        // Only activate inside event.move("...") calls
-        val call = PsiTreeUtil.getParentOfType(str, KtCallExpression::class.java)
-            ?: return PsiReference.EMPTY_ARRAY
-        val dot = call.parent as? KtDotQualifiedExpression ?: return PsiReference.EMPTY_ARRAY
-        if (dot.receiverExpression.text != "event" || call.calleeExpression?.text != "move") {
-            return PsiReference.EMPTY_ARRAY
-        }
-
+        str.asConfigEventPathArg() ?: return PsiReference.EMPTY_ARRAY
         return arrayOf(ConfigPathReference(str))
     }
 }

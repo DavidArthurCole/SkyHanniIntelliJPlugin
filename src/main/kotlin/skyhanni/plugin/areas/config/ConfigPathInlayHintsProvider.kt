@@ -56,7 +56,7 @@ private val HINT_HOVER_COLOR = JBColor(Color(88, 157, 246), Color(88, 157, 246))
  * - The whole hint is rendered in a rounded background box matching native inlay style.
  *
  * Doc popup path (both are `@Internal` by package but have no stable alternative):
- * [psiDocumentationTargets] → [DocumentationManagementHelper.showQuickDoc].
+ * [psiDocumentationTargets] -> [DocumentationManagementHelper.showQuickDoc].
  *
  * **plugin.xml**: register under `com.intellij.codeInsight.hints.inlayProvider`.
  */

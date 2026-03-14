@@ -33,8 +33,9 @@ private const val MIGRATOR_FQN_PREFIX = "at.hannibal2.skyhanni"
  *
  * Reads and - if this is the first migration in the current batch - increments
  * `ConfigUpdaterMigrator.CONFIG_VERSION`. A batch is identified by scanning for
- * any existing `event.move(since = N)` call that already uses the current version;
- * if one is found, that version is reused without incrementing.
+ * any existing `event.<fn>(since = N)` call (across all [CONFIG_EVENT_PATH_FUNS])
+ * that already uses the current version; if one is found, that version is reused
+ * without incrementing.
  */
 class CreateConfigMigrationIntention :
     SelfTargetingOffsetIndependentIntention<KtProperty>(
@@ -95,8 +96,9 @@ class CreateConfigMigrationIntention :
     /**
      * Returns the version number to use for the new `event.move` call.
      * If the current `CONFIG_VERSION` is already referenced by an existing
-     * `event.move(since = N)` anywhere in the project, that version is reused.
-     * Otherwise, `CONFIG_VERSION` is incremented by one and the new value is returned.
+     * `event.<fn>(since = N)` call (any of [CONFIG_EVENT_PATH_FUNS]) anywhere in
+     * the project, that version is reused. Otherwise, `CONFIG_VERSION` is incremented
+     * by one and the new value is returned.
      */
     private fun resolveMigrationVersion(project: Project, factory: KtPsiFactory): Int {
         val migratorObj = findMigratorObject(project) ?: return -1
@@ -112,16 +114,18 @@ class CreateConfigMigrationIntention :
         return newVersion
     }
 
-    // Todo make it work with transform, etc.
-    /** Returns true if any `event.move(since = [version], ...)` call exists in the project. */
+    /**
+     * Returns true if any `event.<fn>(since = [version], ...)` call exists in the project,
+     * where `<fn>` is any of [CONFIG_EVENT_PATH_FUNS].
+     */
     private fun migrationExistsForVersion(project: Project, version: Int): Boolean {
         val scope = GlobalSearchScope.projectScope(project)
         for (vFile in FilenameIndex.getAllFilesByExt(project, "kt", scope)) {
             val psi = PsiManager.getInstance(project).findFile(vFile) as? KtFile ?: continue
             for (call in PsiTreeUtil.findChildrenOfType(psi, KtCallExpression::class.java)) {
                 val dot = call.parent as? KtDotQualifiedExpression ?: continue
-                if (call.calleeExpression?.text != "move") continue
                 if (dot.receiverExpression.text != "event") continue
+                if (call.calleeExpression?.text !in CONFIG_EVENT_PATH_FUNS) continue
                 val sinceArg = call.valueArguments
                     .firstOrNull { it.getArgumentName()?.asName?.asString() == "since" }
                     ?: call.valueArguments.firstOrNull()

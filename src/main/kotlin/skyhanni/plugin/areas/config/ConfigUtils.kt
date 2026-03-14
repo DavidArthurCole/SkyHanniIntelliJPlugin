@@ -9,8 +9,10 @@ import com.intellij.psi.util.PsiTreeUtil
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtBlockStringTemplateEntry
+import org.jetbrains.kotlin.psi.KtCallExpression
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
@@ -33,12 +35,39 @@ const val NOTIFICATION_GROUP = "SkyHanni Plugin"
 /** FQNs that are considered config roots - traversal stops when one is reached. */
 val ROOT_CONFIG_FQNS = setOf(BASE_CONFIG_CLASS, PROFILE_STORAGE_CLASS, PLAYER_STORAGE_CLASS)
 
+/**
+ * Names of `ConfigFixEvent` functions that accept config path string arguments.
+ * All share the same structure: arg 0 is `since: Int`, path arg(s) follow.
+ * `move` is the only one with two path args (fromPath at 1, toPath at 2).
+ */
+val CONFIG_EVENT_PATH_FUNS = setOf("move", "transform", "add", "remove")
+
 fun KtClassOrObject.isAbstract() = hasModifier(KtTokens.ABSTRACT_KEYWORD)
 
 /** True if this property carries either `@ConfigOption` or `@Category`. */
 fun KtProperty.isConfigAnnotated() = annotationEntries.any {
     val name = it.shortName?.asString()
     name == CONFIG_OPTION_ANNOTATION || name == CATEGORY_ANNOTATION
+}
+
+/**
+ * If this string template is a path-valued argument inside an `event.<fn>(...)` call
+ * where `<fn>` is one of [CONFIG_EVENT_PATH_FUNS], returns that call expression.
+ * Returns `null` if the string is not in a path argument position.
+ *
+ * All functions share: arg 0 = `since: Int`, path arg(s) at index ≥ 1.
+ * Only `move` has two path args (indices 1 and 2); all others have exactly one (index 1).
+ */
+fun KtStringTemplateExpression.asConfigEventPathArg(): KtCallExpression? {
+    val call = PsiTreeUtil.getParentOfType(this, KtCallExpression::class.java) ?: return null
+    val dot = call.parent as? KtDotQualifiedExpression ?: return null
+    if (dot.receiverExpression.text != "event") return null
+    val fnName = call.calleeExpression?.text ?: return null
+    if (fnName !in CONFIG_EVENT_PATH_FUNS) return null
+    val argIndex = call.valueArguments.indexOfFirst { it.getArgumentExpression() == this }
+    if (argIndex < 1) return null
+    if (fnName != "move" && argIndex > 1) return null
+    return call
 }
 
 /** Carries the result of walking one level up the config tree. */
