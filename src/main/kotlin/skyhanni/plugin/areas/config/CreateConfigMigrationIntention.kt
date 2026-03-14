@@ -112,6 +112,7 @@ class CreateConfigMigrationIntention :
         return newVersion
     }
 
+    // Todo make it work with transform, etc.
     /** Returns true if any `event.move(since = [version], ...)` call exists in the project. */
     private fun migrationExistsForVersion(project: Project, version: Int): Boolean {
         val scope = GlobalSearchScope.projectScope(project)

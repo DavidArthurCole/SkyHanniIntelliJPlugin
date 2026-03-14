@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.psi.KtSimpleNameStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 
 const val CONFIG_OPTION_ANNOTATION = "ConfigOption"
+const val CATEGORY_ANNOTATION = "Category"
 
 const val BASE_CONFIG_PKG = "at.hannibal2.skyhanni.config"
 const val BASE_CONFIG_CLASS = "at.hannibal2.skyhanni.config.SkyHanniConfig"
@@ -29,10 +30,16 @@ const val PROPERTY_FQN = "io.github.notenoughupdates.moulconfig.observer.Propert
 
 const val NOTIFICATION_GROUP = "SkyHanni Plugin"
 
-/** FQNs that are considered config roots - traversal stops when one is reached. */
+/** FQNs that are considered config roots — traversal stops when one is reached. */
 val ROOT_CONFIG_FQNS = setOf(BASE_CONFIG_CLASS, PROFILE_STORAGE_CLASS, PLAYER_STORAGE_CLASS)
 
 fun KtClassOrObject.isAbstract() = hasModifier(KtTokens.ABSTRACT_KEYWORD)
+
+/** True if this property carries either `@ConfigOption` or `@Category`. */
+fun KtProperty.isConfigAnnotated() = annotationEntries.any {
+    val name = it.shortName?.asString()
+    name == CONFIG_OPTION_ANNOTATION || name == CATEGORY_ANNOTATION
+}
 
 /** Carries the result of walking one level up the config tree. */
 data class ContainingPropertyResult(
@@ -78,7 +85,7 @@ fun computeConfigPath(prop: KtProperty): String? =
 
 /**
  * Given a config class, finds the property in another class whose type
- * references this class - i.e. walks one level up the config tree.
+ * references this class — i.e. walks one level up the config tree.
  *
  * Searches directly on the [KtClassOrObject] so that Kotlin-indexed type
  * references (which are not tied to the Java light class) are found correctly.
@@ -138,7 +145,7 @@ fun resolveLocalValText(ref: KtNameReferenceExpression): String? {
 
 /**
  * Finds a property by name in [kClass] or any of its supertypes within the config package.
- * Returns Pair(property, isInherited) - isInherited=true means it lives in a supertype.
+ * Returns Pair(property, isInherited) — isInherited=true means it lives in a supertype.
  */
 fun findPropertyInHierarchy(kClass: KtClassOrObject, name: String, project: Project): Pair<KtProperty, Boolean>? {
     val direct = kClass.declarations.filterIsInstance<KtProperty>().firstOrNull { it.name == name }

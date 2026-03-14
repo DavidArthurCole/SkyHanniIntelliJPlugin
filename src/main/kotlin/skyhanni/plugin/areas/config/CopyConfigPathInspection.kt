@@ -19,7 +19,7 @@ import java.awt.datatransfer.StringSelection
 
 class CopyConfigPathInspection : AbstractKotlinInspection() {
 
-    override fun getDisplayName() = "Copy config path for a @ConfigOption property"
+    override fun getDisplayName() = "Copy config path for a @ConfigOption or @Category property"
     override fun getShortName() = "CopyConfigPath"
     override fun getGroupDisplayName() = "SkyHanni"
     override fun isEnabledByDefault() = true
@@ -27,7 +27,7 @@ class CopyConfigPathInspection : AbstractKotlinInspection() {
     override fun buildVisitor(holder: ProblemsHolder, isOnTheFly: Boolean): PsiElementVisitor =
         object : KtVisitorVoid() {
             override fun visitProperty(property: KtProperty) {
-                if (property.annotationEntries.none { it.shortName?.asString() == CONFIG_OPTION_ANNOTATION }) return
+                if (!property.isConfigAnnotated()) return
                 val containingClass = PsiTreeUtil.getParentOfType(property, KtClassOrObject::class.java) ?: return
                 if (containingClass.isAbstract()) return
                 holder.registerProblem(

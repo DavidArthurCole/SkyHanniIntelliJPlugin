@@ -35,6 +35,7 @@ class NavigateToConfigIntention :
     override fun generatePreview(project: Project, editor: Editor, file: PsiFile): IntentionPreviewInfo =
         IntentionPreviewInfo.EMPTY
 
+    // Todo make it work with transform, etc.
     override fun isApplicableTo(element: KtStringTemplateExpression): Boolean {
         val literal = evaluateStringTemplate(element) ?: return false
         if (!literal.contains('.')) return false

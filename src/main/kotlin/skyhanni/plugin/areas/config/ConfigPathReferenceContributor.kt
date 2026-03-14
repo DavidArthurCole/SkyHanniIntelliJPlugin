@@ -38,6 +38,7 @@ private class ConfigPathReferenceProvider : PsiReferenceProvider() {
         val literal = evaluateStringTemplate(str) ?: return PsiReference.EMPTY_ARRAY
         if (!literal.contains('.')) return PsiReference.EMPTY_ARRAY
 
+        // Todo make it work with transform, etc.
         // Only activate inside event.move("...") calls
         val call = PsiTreeUtil.getParentOfType(str, KtCallExpression::class.java)
             ?: return PsiReference.EMPTY_ARRAY
