@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtBlockExpression
 import org.jetbrains.kotlin.psi.KtBlockStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtCallExpression
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
@@ -114,6 +115,7 @@ fun computeConfigPathSegments(prop: KtProperty): List<ConfigPathSegment>? {
  */
 fun computeClassConfigPathSegments(kClass: KtClassOrObject): List<ConfigPathSegment>? {
     if (kClass.isAbstract()) return null
+    if (kClass is KtClass && kClass.isEnum()) return null
     val fqName = kClass.fqName?.asString() ?: return null
     if (!fqName.startsWith(BASE_CONFIG_PKG)) return null
     if (fqName in ROOT_CONFIG_FQNS) return null
