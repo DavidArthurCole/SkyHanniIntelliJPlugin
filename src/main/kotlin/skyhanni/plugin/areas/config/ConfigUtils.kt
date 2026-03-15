@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
+import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.psi.KtFunctionLiteral
 import org.jetbrains.kotlin.psi.KtLiteralStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
@@ -114,8 +115,10 @@ fun computeConfigPathSegments(prop: KtProperty): List<ConfigPathSegment>? {
  * Returns `null` for abstract classes, root classes, or classes with no config parent.
  */
 fun computeClassConfigPathSegments(kClass: KtClassOrObject): List<ConfigPathSegment>? {
+    // Abstract classes cannot be instantiated, ergo; ignore
     if (kClass.isAbstract()) return null
-    if (kClass is KtClass && kClass.isEnum()) return null
+    // Enum classes, and their definitions are _referenced_ in other options, but cannot themselves be options.
+    if (kClass is KtClass && kClass.isEnum() || kClass is KtEnumEntry) return null
     val fqName = kClass.fqName?.asString() ?: return null
     if (!fqName.startsWith(BASE_CONFIG_PKG)) return null
     if (fqName in ROOT_CONFIG_FQNS) return null
